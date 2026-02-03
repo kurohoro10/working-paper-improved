@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\UserRole; // Correctly imported
 
 return new class extends Migration
 {
@@ -17,8 +18,20 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // USE THE ENUM VALUE HERE DIRECTLY
+            $table->string('role')->default(UserRole::CLIENT->value);
+
+            $table->string('phone')->nullable();
+            $table->string('company_name')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
+
+            // Indexes for faster searching
+            $table->index('role');
+            $table->index('is_active');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -35,6 +48,8 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+
+        // REMOVED the extra Schema::table block that was causing the duplicate error
     }
 
     /**

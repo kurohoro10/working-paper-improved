@@ -2,10 +2,22 @@
 
 namespace App\Providers;
 
+use App\Models\WorkingPaper;
+use App\Policies\WorkingPaperPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * The model to policy mappings for the application.
+     *
+     * @var array<class-string, class-string>
+     */
+    protected $policies = [
+        WorkingPaper::class => WorkingPaperPolicy::class,
+    ];
+
     /**
      * Register any application services.
      */
@@ -19,6 +31,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(WorkingPaper::class, WorkingPaperPolicy::class);
     }
 }
