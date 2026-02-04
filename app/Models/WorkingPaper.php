@@ -54,9 +54,9 @@ class WorkingPaper extends Model
 
             if (empty($workingPaper->access_token)) {
                 $workingPaper->access_token = static::generateAccessToken();
-                $workingPaper->token_expires_at = now()->addDays(
-                    config('working-paper.token_expiry_days', 30)
-                );
+
+                $expiryDays = (int) config('working-paper.token_expiry_days', 30);
+                $workingPaper->token_expires_at = now()->addDays($expiryDays);
             }
         });
     }
@@ -133,9 +133,8 @@ class WorkingPaper extends Model
     public function regenerateToken(): void
     {
         $this->access_token = static::generateAccessToken();
-        $this->token_expires_at = now()->addDays(
-            config('working-paper.token_expiry_days', 30)
-        );
+        $expiryDays = (int) config('working-paper.token_expiry_days', 30);
+        $this->token_expires_at = now()->addDays($expiryDays);
         $this->save();
     }
 

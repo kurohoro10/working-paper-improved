@@ -18,25 +18,11 @@ use Illuminate\Support\Facades\Auth;
  */
 class WorkingPaperController extends Controller
 {
-    public function __construct(
-        private WorkingPaperService $workingPaperService
-    ) {
-        // Apply authentication middleware
-        $this->middleware('auth');
+    protected $workingPaperService;
 
-        // Only admin and endurego_internal can create/update working papers
-        $this->middleware(function ($request, $next) {
-            $user = Auth::user();
-
-            // For create and store actions, check creation permission
-            if (in_array($request->route()->getActionMethod(), ['create', 'store'])) {
-                if (!$user->canCreateWorkingPaper()) {
-                    abort(403, 'Unauthorized. Only administrators and internal employees can create working papers.');
-                }
-            }
-
-            return $next($request);
-        })->only(['create', 'store', 'update', 'destroy']);
+    public function __construct(WorkingPaperService $workingPaperService)
+    {
+        $this->workingPaperService = $workingPaperService;
     }
 
     /**

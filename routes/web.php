@@ -14,21 +14,28 @@ use Illuminate\Support\Facades\Route;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+// Home/Landing Page
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('working-papers.index');
+    }
+    return view('login');
+})->name('home');
 
 // Guest Access Routes (no authentication required)
-Route::prefix('working-paper')->name('working-paper.guest.')->group(function () {
+Route::prefix('working-paper')->name('working-papers.guest.')->group(function () {
     Route::get('{reference}/view', [GuestAccessController::class, 'view'])
         ->name('view');
     Route::post('request-new-token', [GuestAccessController::class, 'requestNewToken'])
         ->name('request-token');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-
 Route::middleware('auth')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', function () {
+        return redirect()->route('working-papers.index');
+    })->name('dashboard');
+
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -85,13 +92,5 @@ Route::middleware('auth')->group(function () {
             ->name('destroy');
     });
 });
-
-// Home/Landing Page
-Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->route('working-papers.index');
-    }
-    return view('welcome');
-})->name('home');
 
 require __DIR__.'/auth.php';

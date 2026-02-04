@@ -44,4 +44,14 @@
             </x-primary-button>
         </div>
     </form>
+
+    <!-- Demo Credentials -->
+    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h4 class="text-sm font-semibold text-blue-900 mb-2">Demo Credentials:</h4>
+        <div class="text-xs text-blue-800 space-y-1">
+            <div><strong>Admin:</strong> admin@endurego.com / password</div>
+            <div><strong>Employee:</strong> employee@endurego.com / password</div>
+            <div><strong>Client:</strong> john.smith@example.com / password</div>
+        </div>
+    </div>
 </x-guest-layout>

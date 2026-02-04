@@ -18,7 +18,12 @@
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
             <div>
                 <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    <div class="text-3xl font-bold text-indigo-600">
+                        EndureGo
+                    </div>
+                    <div class="text-sm text-gray-600 text-center mt-1">
+                        Working Paper System
+                    </div>
                 </a>
             </div>
 
