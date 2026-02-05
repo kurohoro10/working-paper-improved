@@ -129,19 +129,21 @@
             </div>
 
             {{-- Notes Section --}}
-            @if($workingPaper->notes)
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
-                        </svg>
-                        Notes
-                    </h3>
-                    <p class="text-gray-700 whitespace-pre-wrap">{{ $workingPaper->notes }}</p>
-                </div>
-            </div>
-            @endif
+            @auth
+                @if($workingPaper->notes)
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                                </svg>
+                                Notes
+                            </h3>
+                            <p class="text-gray-700 whitespace-pre-wrap">{{ $workingPaper->notes }}</p>
+                        </div>
+                    </div>
+                @endif
+            @endauth
 
             {{-- Work Sections Tabs --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">

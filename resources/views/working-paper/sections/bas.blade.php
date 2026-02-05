@@ -428,9 +428,32 @@ function basSection(sectionId) {
             await this.loadData();
         },
 
+        detectAuth() {
+            const guestInput = document.getElementById('access_token');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+            const headers = {
+                Accept: 'application/json'
+            };
+
+            // ✅ GUEST TOKEN FIRST
+            if (guestInput?.value) {
+                headers['X-ACCESS-TOKEN'] = guestInput.value;
+                return headers;
+            }
+
+            // ✅ AUTHENTICATED USER SECOND
+            if (csrfMeta?.content) {
+                headers['X-CSRF-TOKEN'] = csrfMeta.content;
+                return headers;
+            }
+
+            console.error('No valid auth token found');
+            return headers;
+        },
+
         async loadData() {
-            const token = document.querySelector('meta[name="csrf-token"]').content;
-            const headers = { 'Accept': 'application/json', 'X-CSRF-TOKEN': token };
+            const headers = this.detectAuth();
 
             try {
                 const [salesRes, purchasesRes] = await Promise.all([
@@ -465,11 +488,10 @@ function basSection(sectionId) {
         },
 
         async loadAllQuarterlyData() {
-            const token = document.querySelector('meta[name="csrf-token"]').content;
             for (const quarter of this.quarters) {
                 const [sales, purchases] = await Promise.all([
-                    this.getQuarterData(quarter.value, 'g1', token),
-                    this.getQuarterData(quarter.value, 'g11', token)
+                    this.getQuarterData(quarter.value, 'g1'),
+                    this.getQuarterData(quarter.value, 'g11')
                 ]);
                 this.quarterlyTotals[quarter.value] = {
                     salesIncGst: sales.incGst,
@@ -481,18 +503,21 @@ function basSection(sectionId) {
             }
         },
 
-        async getQuarterData(quarterValue, label, token) {
+        async getQuarterData(quarterValue, label) {
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/expenses?quarter=${quarterValue}&label=${label}`, {
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token }
+                    headers: this.detectAuth()
                 });
-                if (res.ok) {
-                    const data = (await res.json()).expenses;
-                    return {
-                        incGst: data.reduce((sum, item) => sum + parseFloat(item.amount_inc_gst || 0), 0),
-                        gst: data.reduce((sum, item) => sum + parseFloat(item.gst_amount || 0), 0)
-                    };
+                if (!res.ok) {
+                    console.error('Failed to load quarter', quarterValue, label);
                 }
+
+                const data = (await res.json()).expenses;
+
+                return {
+                    incGst: data.reduce((sum, item) => sum + parseFloat(item.amount_inc_gst || 0), 0),
+                    gst: data.reduce((sum, item) => sum + parseFloat(item.gst_amount || 0), 0)
+                };
             } catch (error) {
                 console.error('Quarter data error:', error);
             }
@@ -500,11 +525,13 @@ function basSection(sectionId) {
         },
 
         async saveSale() {
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
             this.saving = true;
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/expenses`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    headers,
                     body: JSON.stringify({
                         label: 'g1',
                         description: this.newSale.description,
@@ -529,11 +556,13 @@ function basSection(sectionId) {
         },
 
         async savePurchase() {
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
             this.saving = true;
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/expenses`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    headers,
                     body: JSON.stringify({
                         label: 'g11',
                         description: this.newPurchase.description,
@@ -558,11 +587,12 @@ function basSection(sectionId) {
         },
 
         async deleteSale(id) {
+            const headers = this.detectAuth();
             if (!confirm('Delete this sale?')) return;
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/expenses/${id}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                    headers,
                 });
                 if ((await res.json()).success) {
                     this.sales = this.sales.filter(s => s.id !== id);
@@ -574,11 +604,12 @@ function basSection(sectionId) {
         },
 
         async deletePurchase(id) {
+            const headers = this.detectAuth();
             if (!confirm('Delete this purchase?')) return;
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/expenses/${id}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                    headers,
                 });
                 if ((await res.json()).success) {
                     this.purchases = this.purchases.filter(p => p.id !== id);
@@ -597,6 +628,7 @@ function basSection(sectionId) {
 
         async handleFileUpload(event) {
             const file = event.target.files[0];
+            const headers = this.detectAuth();
             if (!file) return;
 
             const formData = new FormData();
@@ -605,7 +637,7 @@ function basSection(sectionId) {
             try {
                 const res = await fetch(`/api/work-sections/expenses/${this.currentFileId}/upload`, {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    headers,
                     body: formData
                 });
 

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('file_path');
             $table->string('mime_type');
             $table->unsignedBigInteger('file_size');
-            $table->foreignId('uploaded_by')->constrained('users')->onDelete('cascade');
+            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->index('uploaded_by');

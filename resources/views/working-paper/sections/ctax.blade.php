@@ -417,14 +417,13 @@ function ctaxSection(sectionId) {
         async loadData() {
             try {
                 const quarter = this.activeTab === 'all' ? '' : this.activeTab;
-
                 // Load income
                 const incomeResponse = await fetch(
                     `/api/work-sections/${this.sectionId}/income${quarter ? '?quarter=' + quarter : ''}`,
                     {
                         headers: {
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            'X-Access-Token': document.getElementById('access_token').value
                         }
                     }
                 );
@@ -446,7 +445,7 @@ function ctaxSection(sectionId) {
                     {
                         headers: {
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            'X-Access-Token': document.getElementById('access_token').value
                         }
                     }
                 );
@@ -544,7 +543,6 @@ function ctaxSection(sectionId) {
 
         async saveIncome() {
             this.saving = true;
-
             try {
                 if (!this.newIncome.description || this.newIncome.description.trim() === '') {
                     throw new Error('Description is required');
@@ -559,7 +557,7 @@ function ctaxSection(sectionId) {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     },
                     body: JSON.stringify({
                         label: 'ctax',
@@ -604,13 +602,12 @@ function ctaxSection(sectionId) {
             if (!confirm('Are you sure you want to delete this income item?')) {
                 return;
             }
-
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/income/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     }
                 });
 
@@ -659,7 +656,6 @@ function ctaxSection(sectionId) {
 
         async saveExpense() {
             this.saving = true;
-
             try {
                 if (!this.newExpense.description || this.newExpense.description.trim() === '') {
                     throw new Error('Description is required');
@@ -674,7 +670,7 @@ function ctaxSection(sectionId) {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     },
                     body: JSON.stringify({
                         label: 'ctax',
@@ -725,13 +721,12 @@ function ctaxSection(sectionId) {
             if (!confirm('Are you sure you want to delete this expense?')) {
                 return;
             }
-
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/expenses/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     }
                 });
 
@@ -769,13 +764,12 @@ function ctaxSection(sectionId) {
 
             const formData = new FormData();
             formData.append('file', file);
-
             try {
                 const response = await fetch(`/api/work-sections/income/${incomeId}/upload`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     },
                     body: formData
                 });
@@ -810,13 +804,12 @@ function ctaxSection(sectionId) {
 
             const formData = new FormData();
             formData.append('file', file);
-
             try {
                 const response = await fetch(`/api/work-sections/expenses/${expenseId}/upload`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     },
                     body: formData
                 });
@@ -858,7 +851,7 @@ function ctaxSection(sectionId) {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     },
                     body: formData
                 });
@@ -894,7 +887,7 @@ function ctaxSection(sectionId) {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-Access-Token': document.getElementById('access_token').value
                     }
                 });
 

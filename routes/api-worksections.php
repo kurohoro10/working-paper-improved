@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth'])->prefix('api/work-sections')->name('api.work-sections.')->group(function () {
+Route::middleware(['auth.or.token'])->prefix('api/work-sections')->name('api.work-sections.')->group(function () {
     // Rental Properties Management
     Route::get('{section}/rental-properties', [WorkSectionController::class, 'getRentalProperties'])->name('rental-properties.index');
     Route::post('{section}/rental-properties', [WorkSectionController::class, 'storeRentalProperty'])->name('rental-properties.store');

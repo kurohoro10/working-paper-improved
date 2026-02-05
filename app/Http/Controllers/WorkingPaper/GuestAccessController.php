@@ -67,13 +67,14 @@ class GuestAccessController extends Controller
 
         // Get summary data
         $summary = $this->workingPaperService->getSummary($workingPaper);
+        $access_token= $workingPaper->access_token;
 
         /**
          * Return guest-specific view
          * This view has limited functionality compared to authenticated view
          * (e.g., no edit/delete buttons, simplified interface)
          */
-        return view('working-paper.guest.view', compact('workingPaper', 'summary'));
+        return view('working-paper.guest.view', compact('workingPaper', 'summary', 'access_token'));
     }
 
     /**

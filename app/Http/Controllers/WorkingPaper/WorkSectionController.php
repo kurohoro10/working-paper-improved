@@ -333,6 +333,8 @@ class WorkSectionController extends Controller
                 'public'
             );
 
+
+
             // Create attachment record
             $attachment = $income->attachments()->create([
                 'original_filename' => $file->getClientOriginalName(),
