@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware(['auth'])->prefix('api/work-sections')->name('api.work-sections.')->group(function () {
+    // Rental Properties Management
+    Route::get('{section}/rental-properties', [WorkSectionController::class, 'getRentalProperties'])->name('rental-properties.index');
+    Route::post('{section}/rental-properties', [WorkSectionController::class, 'storeRentalProperty'])->name('rental-properties.store');
+    Route::put('{section}/rental-properties/{property}', [WorkSectionController::class, 'updateRentalProperty'])->name('rental-properties.update');
+    Route::delete('{section}/rental-properties/{property}', [WorkSectionController::class, 'destroyRentalProperty'])->name('rental-properties.destroy');
 
     // Income Management
     Route::post('{section}/income', [WorkSectionController::class, 'storeIncome'])->name('income.store');

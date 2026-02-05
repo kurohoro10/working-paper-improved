@@ -22,9 +22,9 @@ enum ExpenseFieldType: string
     public function label(): string
     {
         return match($this) {
-            self::TYPE_A => 'Type A',
-            self::TYPE_B => 'Type B',
-            self::TYPE_C => 'Type C',
+            self::TYPE_A => 'A',
+            self::TYPE_B => 'B',
+            self::TYPE_C => 'C',
         };
     }
 }

@@ -17,6 +17,7 @@ class RentalProperty extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'label',
         'work_section_id',
         'address_label',
         'full_address',

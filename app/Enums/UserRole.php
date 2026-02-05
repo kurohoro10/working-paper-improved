@@ -33,7 +33,7 @@ enum UserRole: string
      */
     public function canCreateWorkingPaper(): bool
     {
-        return in_array($this, [self::ADMIN, self::ENDUREGO_INTERNAL]);
+        return in_array($this, [self::ADMIN, self::ENDUREGO_INTERNAL, self::CLIENT]);
     }
 
     /**

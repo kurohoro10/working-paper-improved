@@ -18,9 +18,15 @@ class IncomeItem extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'label',
         'work_section_id',
         'rental_property_id',
         'description',
+        'contribution',
+        'interest_income',
+        'dividends',
+        'rental_income',
+        'capital_gains',
         'amount',
         'quarter',
         'client_comment',

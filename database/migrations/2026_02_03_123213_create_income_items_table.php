@@ -13,11 +13,17 @@ return new class extends Migration
     {
         Schema::create('income_items', function (Blueprint $table) {
             $table->id();
+            $table->string('label');
             $table->foreignId('work_section_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('rental_property_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('description');
-            $table->decimal('amount', 15, 2);
-            $table->string('quarter')->nullable(); // all, q1, q2, q3, q4
+            $table->decimal('contribution', 15, 2)->nullable();
+            $table->decimal('interest_income', 15, 2)->nullable();
+            $table->decimal('dividends', 15, 2)->nullable();
+            $table->decimal('rental_income', 15, 2)->nullable();
+            $table->decimal('capital_gains', 15, 2)->nullable();
+            $table->decimal('amount', 15, 2)->nullable();
+            $table->string('quarter')->nullable();
             $table->text('client_comment')->nullable();
             $table->text('own_comment')->nullable();
             $table->timestamps();

@@ -7,6 +7,7 @@ use App\Models\WorkSection;
 use App\Models\IncomeItem;
 use App\Models\ExpenseItem;
 use App\Models\Attachment;
+use App\Models\RentalProperty;
 use App\Services\GSTCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,25 +29,56 @@ class WorkSectionController extends Controller
     public function storeIncome(Request $request, WorkSection $section)
     {
         $validated = $request->validate([
-            'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'quarter' => 'nullable|in:q1,q2,q3,q4,all',
-            'client_comment' => 'nullable|string',
-            'own_comment' => 'nullable|string',
+            'label'               => 'required|string|max:50',
+            'description'         => 'required|string|max:255',
+            'amount'              => 'required|numeric|min:0',
+            'is_gst_free'         => 'boolean',
+            'quarter'             => 'nullable|in:q1,q2,q3,q4,all',
+            'rental_property_id'  => 'nullable|exists:rental_properties,id',
+            'client_comment'      => 'nullable|string',
+            'own_comment'         => 'nullable|string',
         ]);
 
+        // If rental_property_id is provided, verify it belongs to this section
+        if (isset($validated['rental_property_id'])) {
+            $property = RentalProperty::find($validated['rental_property_id']);
+            if (!$property || $property->work_section_id !== $section->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid rental property'
+                ], 400);
+            }
+        }
+
+        // Calculate GST for income
+        $isGstFree = $validated['is_gst_free'] ?? false;
+        $amount = $validated['amount'];
+
+        if ($isGstFree) {
+            $gstAmount = 0;
+            $netAmount = $amount;
+        } else {
+            $gstAmount = $amount / 11;
+            $netAmount = $amount - $gstAmount;
+        }
+
         $income = $section->incomeItems()->create([
-            'description' => $validated['description'],
-            'amount' => $validated['amount'],
-            'quarter' => $validated['quarter'] ?? 'all',
-            'client_comment' => $validated['client_comment'] ?? null,
-            'own_comment' => $validated['own_comment'] ?? null,
+            'label'               => $validated['label'],
+            'description'         => $validated['description'],
+            'amount'              => $amount,
+            'gst_amount'          => $gstAmount,
+            'net_amount'          => $netAmount,
+            'is_gst_free'         => $isGstFree,
+            'quarter'             => $validated['quarter'] ?? 'all',
+            'rental_property_id'  => $validated['rental_property_id'] ?? null,
+            'client_comment'      => $validated['client_comment'] ?? null,
+            'own_comment'         => $validated['own_comment'] ?? null,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Income item added successfully',
-            'income' => $income
+            'income'  => $income->load('attachments')
         ]);
     }
 
@@ -64,19 +96,45 @@ class WorkSectionController extends Controller
         }
 
         $validated = $request->validate([
-            'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'quarter' => 'nullable|in:q1,q2,q3,q4,all',
-            'client_comment' => 'nullable|string',
-            'own_comment' => 'nullable|string',
+            'label'               => 'required|string|max:50',
+            'description'         => 'required|string|max:255',
+            'amount'              => 'required|numeric|min:0',
+            'is_gst_free'         => 'boolean',
+            'quarter'             => 'nullable|in:q1,q2,q3,q4,all',
+            'rental_property_id'  => 'nullable|exists:rental_properties,id',
+            'client_comment'      => 'nullable|string',
+            'own_comment'         => 'nullable|string',
         ]);
 
-        $income->update($validated);
+        // Calculate GST for income
+        $isGstFree = $validated['is_gst_free'] ?? $income->is_gst_free ?? false;
+        $amount = $validated['amount'];
+
+        if ($isGstFree) {
+            $gstAmount = 0;
+            $netAmount = $amount;
+        } else {
+            $gstAmount = $amount / 11;
+            $netAmount = $amount - $gstAmount;
+        }
+
+        $income->update([
+            'label'               => $validated['label'],
+            'description'         => $validated['description'],
+            'amount'              => $amount,
+            'gst_amount'          => $gstAmount,
+            'net_amount'          => $netAmount,
+            'is_gst_free'         => $isGstFree,
+            'quarter'             => $validated['quarter'] ?? $income->quarter,
+            'rental_property_id'  => $validated['rental_property_id'] ?? $income->rental_property_id,
+            'client_comment'      => $validated['client_comment'] ?? $income->client_comment,
+            'own_comment'         => $validated['own_comment'] ?? $income->own_comment,
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Income item updated successfully',
-            'income' => $income->fresh()
+            'income' => $income->fresh()->load('attachments')
         ]);
     }
 
@@ -113,16 +171,28 @@ class WorkSectionController extends Controller
     public function storeExpense(Request $request, WorkSection $section)
     {
         $validated = $request->validate([
-            'label' => 'nullable|string|max:50', // For BAS: 'g1', 'g11', etc.
-            'description' => 'required|string|max:255',
-            'type' => 'nullable|string|max:50',
-            'field_type' => 'nullable|in:a,b,c',
-            'amount_inc_gst' => 'required|numeric|min:0',
-            'is_gst_free' => 'boolean',
-            'quarter' => 'nullable|in:q1,q2,q3,q4,all',
-            'client_comment' => 'nullable|string',
-            'own_comment' => 'nullable|string',
+            'label'               => 'required|string|max:50',
+            'description'         => 'required|string|max:255',
+            'type'                => 'nullable|string|max:50',
+            'field_type'          => 'nullable|in:A,B,C',
+            'amount_inc_gst'      => 'required|numeric|min:0',
+            'is_gst_free'         => 'boolean',
+            'quarter'             => 'nullable|in:q1,q2,q3,q4,all',
+            'rental_property_id'  => 'nullable|exists:rental_properties,id',
+            'client_comment'      => 'nullable|string',
+            'own_comment'         => 'nullable|string',
         ]);
+
+        // If rental_property_id is provided, verify it belongs to this section
+        if (isset($validated['rental_property_id'])) {
+            $property = RentalProperty::find($validated['rental_property_id']);
+            if (!$property || $property->work_section_id !== $section->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid rental property'
+                ], 400);
+            }
+        }
 
         // Calculate GST automatically
         $isGstFree = $validated['is_gst_free'] ?? false;
@@ -132,23 +202,24 @@ class WorkSectionController extends Controller
         );
 
         $expense = $section->expenseItems()->create([
-            'label' => $validated['label'] ?? null,
-            'description' => $validated['description'],
-            'type' => $validated['type'] ?? null,
-            'field_type' => $validated['field_type'] ?? null,
-            'amount_inc_gst' => $gstCalculation['amount_inc_gst'],
-            'gst_amount' => $gstCalculation['gst_amount'],
-            'net_ex_gst' => $gstCalculation['net_ex_gst'],
-            'is_gst_free' => $isGstFree,
-            'quarter' => $validated['quarter'] ?? 'all',
-            'client_comment' => $validated['client_comment'] ?? null,
-            'own_comment' => $validated['own_comment'] ?? null,
+            'label'               => $validated['label'],
+            'description'         => $validated['description'],
+            'type'                => $validated['type'] ?? null,
+            'field_type'          => $validated['field_type'] ?? null,
+            'amount_inc_gst'      => $gstCalculation['amount_inc_gst'],
+            'gst_amount'          => $gstCalculation['gst_amount'],
+            'net_ex_gst'          => $gstCalculation['net_ex_gst'],
+            'is_gst_free'         => $isGstFree,
+            'quarter'             => $validated['quarter'] ?? 'all',
+            'rental_property_id'  => $validated['rental_property_id'] ?? null,
+            'client_comment'      => $validated['client_comment'] ?? null,
+            'own_comment'         => $validated['own_comment'] ?? null,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Expense item added successfully',
-            'expense' => $expense
+            'expense' => $expense->load('attachments')
         ]);
     }
 
@@ -157,6 +228,7 @@ class WorkSectionController extends Controller
      */
     public function updateExpense(Request $request, WorkSection $section, ExpenseItem $expense)
     {
+        dd($request);
         // Verify expense belongs to this section
         if ($expense->work_section_id !== $section->id) {
             return response()->json([
@@ -166,14 +238,16 @@ class WorkSectionController extends Controller
         }
 
         $validated = $request->validate([
-            'description' => 'required|string|max:255',
-            'type' => 'nullable|in:operating,admin,other',
-            'field_type' => 'nullable|in:a,b,c',
-            'amount_inc_gst' => 'required|numeric|min:0',
-            'is_gst_free' => 'boolean',
-            'quarter' => 'nullable|in:q1,q2,q3,q4,all',
-            'client_comment' => 'nullable|string',
-            'own_comment' => 'nullable|string',
+            'label'               => 'required|string|max:50',
+            'description'         => 'required|string|max:255',
+            'type'                => 'nullable|in:operating,admin,other',
+            'field_type'          => 'nullable|in:A,B,C',
+            'amount_inc_gst'      => 'required|numeric|min:0',
+            'is_gst_free'         => 'boolean',
+            'quarter'             => 'nullable|in:q1,q2,q3,q4,all',
+            'rental_property_id'  => 'nullable|exists:rental_properties,id',
+            'client_comment'      => 'nullable|string',
+            'own_comment'         => 'nullable|string',
         ]);
 
         // Recalculate GST if amount changed
@@ -184,22 +258,24 @@ class WorkSectionController extends Controller
         );
 
         $expense->update([
-            'description' => $validated['description'],
-            'type' => $validated['type'] ?? $expense->type,
-            'field_type' => $validated['field_type'] ?? $expense->field_type,
-            'amount_inc_gst' => $gstCalculation['amount_inc_gst'],
-            'gst_amount' => $gstCalculation['gst_amount'],
-            'net_ex_gst' => $gstCalculation['net_ex_gst'],
-            'is_gst_free' => $isGstFree,
-            'quarter' => $validated['quarter'] ?? $expense->quarter,
-            'client_comment' => $validated['client_comment'] ?? $expense->client_comment,
-            'own_comment' => $validated['own_comment'] ?? $expense->own_comment,
+            'label'               => $validated['label'],
+            'description'         => $validated['description'],
+            'type'                => $validated['type'] ?? $expense->type,
+            'field_type'          => $validated['field_type'] ?? $expense->field_type,
+            'amount_inc_gst'      => $gstCalculation['amount_inc_gst'],
+            'gst_amount'          => $gstCalculation['gst_amount'],
+            'net_ex_gst'          => $gstCalculation['net_ex_gst'],
+            'is_gst_free'         => $isGstFree,
+            'quarter'             => $validated['quarter'] ?? $expense->quarter,
+            'rental_property_id'  => $validated['rental_property_id'] ?? $expense->rental_property_id,
+            'client_comment'      => $validated['client_comment'] ?? $expense->client_comment,
+            'own_comment'         => $validated['own_comment'] ?? $expense->own_comment,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Expense item updated successfully',
-            'expense' => $expense->fresh()
+            'expense' => $expense->fresh()->load('attachments')
         ]);
     }
 
@@ -260,16 +336,16 @@ class WorkSectionController extends Controller
             // Create attachment record
             $attachment = $income->attachments()->create([
                 'original_filename' => $file->getClientOriginalName(),
-                'stored_filename' => $filename,
-                'file_path' => $path,
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
-                'uploaded_by' => auth()->id(),
+                'stored_filename'   => $filename,
+                'file_path'         => $path,
+                'mime_type'         => $file->getMimeType(),
+                'file_size'         => $file->getSize(),
+                'uploaded_by'       => auth()->id(),
             ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'File uploaded successfully',
+                'success'    => true,
+                'message'    => 'File uploaded successfully',
                 'attachment' => $attachment
             ]);
         } catch (\Exception $e) {
@@ -310,16 +386,16 @@ class WorkSectionController extends Controller
             // Create attachment record
             $attachment = $expense->attachments()->create([
                 'original_filename' => $file->getClientOriginalName(),
-                'stored_filename' => $filename,
-                'file_path' => $path,
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
-                'uploaded_by' => auth()->id(),
+                'stored_filename'   => $filename,
+                'file_path'         => $path,
+                'mime_type'         => $file->getMimeType(),
+                'file_size'         => $file->getSize(),
+                'uploaded_by'       => auth()->id(),
             ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'File uploaded successfully',
+                'success'    => true,
+                'message'    => 'File uploaded successfully',
                 'attachment' => $attachment
             ]);
         } catch (\Exception $e) {
@@ -375,12 +451,12 @@ class WorkSectionController extends Controller
     public function getSummary(WorkSection $section)
     {
         $summary = [
-            'total_income' => $section->incomeItems()->sum('amount'),
+            'total_income'           => $section->incomeItems()->sum('amount'),
             'total_expenses_inc_gst' => $section->expenseItems()->sum('amount_inc_gst'),
-            'total_expenses_gst' => $section->expenseItems()->sum('gst_amount'),
-            'total_expenses_net' => $section->expenseItems()->sum('net_ex_gst'),
-            'net_profit' => 0,
-            'quarterly_breakdown' => []
+            'total_expenses_gst'     => $section->expenseItems()->sum('gst_amount'),
+            'total_expenses_net'     => $section->expenseItems()->sum('net_ex_gst'),
+            'net_profit'             => 0,
+            'quarterly_breakdown'    => []
         ];
 
         $summary['net_profit'] = $summary['total_income'] - $summary['total_expenses_net'];
@@ -416,11 +492,16 @@ class WorkSectionController extends Controller
             $query->where('quarter', $request->quarter);
         }
 
+        // Filter by rental property if provided
+        if ($request->has('rental_property_id')) {
+            $query->where('rental_property_id', $request->rental_property_id);
+        }
+
         $income = $query->get();
 
         return response()->json([
             'success' => true,
-            'income' => $income
+            'income'  => $income
         ]);
     }
 
@@ -441,11 +522,107 @@ class WorkSectionController extends Controller
             $query->where('label', $request->label);
         }
 
+        // Filter by rental property if provided
+        if ($request->has('rental_property_id')) {
+            $query->where('rental_property_id', $request->rental_property_id);
+        }
+
         $expenses = $query->get();
 
         return response()->json([
-            'success' => true,
+            'success'  => true,
             'expenses' => $expenses
+        ]);
+    }
+
+    /**
+     * Get all rental properties for a section
+     */
+    public function getRentalProperties(WorkSection $section)
+    {
+        $properties = $section->rentalProperties()
+            ->with(['incomeItems.attachments', 'expenseItems.attachments'])
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'properties' => $properties
+        ]);
+    }
+
+    /**
+     * Store a new rental property
+     */
+    public function storeRentalProperty(Request $request, WorkSection $section)
+    {
+        $validated = $request->validate([
+            'label' => 'required|string|max:50',
+            'address_label' => 'nullable|string|max:255',
+            'full_address' => 'nullable|string|max:500',
+            'ownership_percentage' => 'nullable|numeric|min:0|max:100',
+            'period_rented_from' => 'nullable|date',
+            'period_rented_to' => 'nullable|date|after_or_equal:period_rented_from',
+        ]);
+
+        $property = $section->rentalProperties()->create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rental property created successfully',
+            'property' => $property
+        ]);
+    }
+
+    /**
+     * Update a rental property
+     */
+    public function updateRentalProperty(Request $request, WorkSection $section, RentalProperty $property)
+    {
+        // Verify property belongs to this section
+        if ($property->work_section_id !== $section->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Property does not belong to this section'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'label' => 'required|string|max:50',
+            'address_label' => 'nullable|string|max:255',
+            'full_address' => 'nullable|string|max:500',
+            'ownership_percentage' => 'nullable|numeric|min:0|max:100',
+            'period_rented_from' => 'nullable|date',
+            'period_rented_to' => 'nullable|date|after_or_equal:period_rented_from',
+        ]);
+
+        $property->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rental property updated successfully',
+            'property' => $property->fresh()
+        ]);
+    }
+
+    /**
+     * Delete a rental property
+     */
+    public function destroyRentalProperty(WorkSection $section, RentalProperty $property)
+    {
+        // Verify property belongs to this section
+        if ($property->work_section_id !== $section->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Property does not belong to this section'
+            ], 403);
+        }
+
+        // Delete the property (cascade will handle income/expenses)
+        $property->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rental property deleted successfully'
         ]);
     }
 }

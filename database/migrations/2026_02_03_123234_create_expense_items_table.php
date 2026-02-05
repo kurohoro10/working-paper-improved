@@ -17,8 +17,8 @@ return new class extends Migration
             $table->foreignId('work_section_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('rental_property_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('description');
-            $table->string('field_type')->nullable(); // A, B, C - required for certain work types
-            $table->string('quarter')->nullable(); // all, q1, q2, q3, q4
+            $table->string('field_type')->nullable();
+            $table->string('quarter')->nullable();
             $table->decimal('amount_inc_gst', 15, 2)->nullable();
             $table->decimal('gst_amount', 15, 2)->nullable();
             $table->decimal('net_ex_gst', 15, 2)->nullable();

@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('rental_properties', function (Blueprint $table) {
             $table->id();
+            $table->string('label');
             $table->foreignId('work_section_id')->constrained()->onDelete('cascade');
-            $table->string('address_label'); // Nickname or address
+            $table->string('address_label')->nullable();
             $table->string('full_address')->nullable();
             $table->decimal('ownership_percentage', 5, 2)->nullable(); // e.g., 50.00 for 50%
             $table->date('period_rented_from')->nullable();
