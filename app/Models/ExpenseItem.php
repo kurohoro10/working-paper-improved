@@ -19,6 +19,7 @@ class ExpenseItem extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'label',
         'work_section_id',
         'rental_property_id',
         'description',

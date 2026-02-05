@@ -19,7 +19,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('working-papers.index');
     }
-    return view('login');
+    return redirect()->route('login');
 })->name('home');
 
 // Guest Access Routes (no authentication required)
@@ -93,4 +93,8 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// Work Section API Routes
+require __DIR__.'/api-worksections.php';
+
+// Breeze Authentication Routes
 require __DIR__.'/auth.php';

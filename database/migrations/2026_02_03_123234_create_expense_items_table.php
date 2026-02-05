@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('expense_items', function (Blueprint $table) {
             $table->id();
+            $table->string('label');
             $table->foreignId('work_section_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('rental_property_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('description');

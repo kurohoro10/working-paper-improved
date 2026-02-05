@@ -223,17 +223,17 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="bg-white p-4 rounded-lg shadow-sm">
                 <div class="text-xs text-gray-600 mb-1 uppercase tracking-wide">Total Income</div>
-                <div class="text-2xl font-bold text-green-600" x-text="'$' + totalIncome.toFixed(2)"></div>
+                <div class="text-2xl font-bold text-green-600" x-text="formatCurrency(totalIncome)"></div>
             </div>
             <div class="bg-white p-4 rounded-lg shadow-sm">
                 <div class="text-xs text-gray-600 mb-1 uppercase tracking-wide">Total Expenses (Net)</div>
-                <div class="text-2xl font-bold text-red-600" x-text="'$' + totalExpensesNet.toFixed(2)"></div>
+                <div class="text-2xl font-bold text-red-600" x-text="formatCurrency(totalExpensesNet)"></div>
             </div>
             <div class="bg-white p-4 rounded-lg shadow-sm">
                 <div class="text-xs text-gray-600 mb-1 uppercase tracking-wide">Net Profit</div>
                 <div class="text-2xl font-bold"
                      :class="netProfit >= 0 ? 'text-purple-600' : 'text-red-600'"
-                     x-text="'$' + netProfit.toFixed(2)"></div>
+                     x-text="formatCurrency(netProfit)"></div>
             </div>
         </div>
     </div>
@@ -309,6 +309,14 @@ function soleTraderSection() {
                 amount: 0,
                 quarter: this.activeTab === 'all' ? 'q1' : this.activeTab
             });
+        },
+
+        // Helper function for formatting
+        formatCurrency(number) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD', // Change to 'AUD' or your preferred code
+            }).format(number || 0);
         },
 
         removeIncome(index) {
