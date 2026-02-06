@@ -373,9 +373,33 @@ function smsfSection(sectionId) {
             await this.loadData();
         },
 
+        detectAuth() {
+            const guestInput = document.getElementById('access_token');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+            const headers = {
+                Accept: 'application/json'
+            };
+
+            // ✅ GUEST TOKEN FIRST
+            if (guestInput?.value) {
+                headers['X-ACCESS-TOKEN'] = guestInput.value;
+                return headers;
+            }
+
+            // ✅ AUTHENTICATED USER SECOND
+            if (csrfMeta?.content) {
+                headers['X-CSRF-TOKEN'] = csrfMeta.content;
+                return headers;
+            }
+
+            console.error('No valid auth token found');
+            return headers;
+        },
+
         async loadData() {
-            const token = document.querySelector('meta[name="csrf-token"]').content;
-            const headers = { 'Accept': 'application/json', 'X-CSRF-TOKEN': token };
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
 
             try {
                 // Load income (label='smsf')
@@ -402,10 +426,12 @@ function smsfSection(sectionId) {
 
         async saveIncome() {
             this.saving = true;
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/income`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    headers,
                     body: JSON.stringify({
                         label: this.newIncome.type, // Use type as label (contributions, interest, etc.)
                         description: this.newIncome.description || this.newIncome.type,
@@ -435,11 +461,15 @@ function smsfSection(sectionId) {
                 return;
             }
 
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
+
             this.saving = true;
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/expenses`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    headers,
                     body: JSON.stringify({
                         label: 'smsf',
                         description: this.newExpense.description,
@@ -476,11 +506,12 @@ function smsfSection(sectionId) {
 
         async deleteIncome(incomeId) {
             if (!confirm('Delete this income?')) return;
+            const headers = this.detectAuth();
 
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/income/${incomeId}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                    headers
                 });
 
                 if ((await res.json()).success) {
@@ -494,11 +525,12 @@ function smsfSection(sectionId) {
 
         async deleteExpense(expenseId) {
             if (!confirm('Delete this expense?')) return;
+            const headers = this.detectAuth();
 
             try {
                 const res = await fetch(`/api/work-sections/${this.sectionId}/expenses/${expenseId}`, {
                     method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                    headers
                 });
 
                 if ((await res.json()).success) {
@@ -520,6 +552,7 @@ function smsfSection(sectionId) {
             const file = event.target.files[0];
             if (!file) return;
 
+            const headers = this.detectAuth();
             const formData = new FormData();
             formData.append('file', file);
 
@@ -530,7 +563,7 @@ function smsfSection(sectionId) {
 
                 const res = await fetch(endpoint, {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    headers,
                     body: formData
                 });
 

@@ -415,16 +415,15 @@ function ctaxSection(sectionId) {
 
         // Load data
         async loadData() {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             try {
                 const quarter = this.activeTab === 'all' ? '' : this.activeTab;
                 // Load income
                 const incomeResponse = await fetch(
                     `/api/work-sections/${this.sectionId}/income${quarter ? '?quarter=' + quarter : ''}`,
                     {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Access-Token': document.getElementById('access_token').value
-                        }
+                        headers
                     }
                 );
 
@@ -443,10 +442,7 @@ function ctaxSection(sectionId) {
                 const expenseResponse = await fetch(
                     `/api/work-sections/${this.sectionId}/expenses${quarter ? '?quarter=' + quarter : ''}`,
                     {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Access-Token': document.getElementById('access_token').value
-                        }
+                        headers
                     }
                 );
 
@@ -505,6 +501,30 @@ function ctaxSection(sectionId) {
             }).format(number || 0);
         },
 
+        detectAuth() {
+            const guestInput = document.getElementById('access_token');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+            const headers = {
+                Accept: 'application/json'
+            };
+
+            // ✅ GUEST TOKEN FIRST
+            if (guestInput?.value) {
+                headers['X-ACCESS-TOKEN'] = guestInput.value;
+                return headers;
+            }
+
+            // ✅ AUTHENTICATED USER SECOND
+            if (csrfMeta?.content) {
+                headers['X-CSRF-TOKEN'] = csrfMeta.content;
+                return headers;
+            }
+
+            console.error('No valid auth token found');
+            return headers;
+        },
+
         calculateGST(amount, isGstFree) {
             if (isGstFree) return 0;
             return amount / 11;
@@ -542,6 +562,9 @@ function ctaxSection(sectionId) {
         },
 
         async saveIncome() {
+        const headers = this.detectAuth();
+        headers['Content-Type'] = 'application/json';
+        headers['Accept'] = 'application/json';
             this.saving = true;
             try {
                 if (!this.newIncome.description || this.newIncome.description.trim() === '') {
@@ -554,11 +577,7 @@ function ctaxSection(sectionId) {
 
                 const response = await fetch(`/api/work-sections/${this.sectionId}/income`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: 'ctax',
                         description: this.newIncome.description,
@@ -599,16 +618,15 @@ function ctaxSection(sectionId) {
         },
 
         async deleteIncome(id) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             if (!confirm('Are you sure you want to delete this income item?')) {
                 return;
             }
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/income/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    }
+                    headers,
                 });
 
                 const data = await response.json();
@@ -655,6 +673,9 @@ function ctaxSection(sectionId) {
         },
 
         async saveExpense() {
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
             this.saving = true;
             try {
                 if (!this.newExpense.description || this.newExpense.description.trim() === '') {
@@ -667,11 +688,7 @@ function ctaxSection(sectionId) {
 
                 const response = await fetch(`/api/work-sections/${this.sectionId}/expenses`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: 'ctax',
                         type: this.newExpense.type,
@@ -718,16 +735,15 @@ function ctaxSection(sectionId) {
         },
 
         async deleteExpense(id) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             if (!confirm('Are you sure you want to delete this expense?')) {
                 return;
             }
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/expenses/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    }
+                    headers
                 });
 
                 const data = await response.json();
@@ -760,6 +776,8 @@ function ctaxSection(sectionId) {
         // File upload
         async uploadIncomeFile(incomeId, event) {
             const file = event.target.files[0];
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             if (!file) return;
 
             const formData = new FormData();
@@ -767,10 +785,7 @@ function ctaxSection(sectionId) {
             try {
                 const response = await fetch(`/api/work-sections/income/${incomeId}/upload`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    },
+                    headers,
                     body: formData
                 });
 
@@ -800,6 +815,8 @@ function ctaxSection(sectionId) {
 
         async uploadExpenseFile(expenseId, event) {
             const file = event.target.files[0];
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             if (!file) return;
 
             const formData = new FormData();
@@ -807,10 +824,7 @@ function ctaxSection(sectionId) {
             try {
                 const response = await fetch(`/api/work-sections/expenses/${expenseId}/upload`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    },
+                    headers,
                     body: formData
                 });
 
@@ -839,6 +853,8 @@ function ctaxSection(sectionId) {
         },
 
         async uploadFileForNewEntry(entryId, file, entryType) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             const formData = new FormData();
             formData.append('file', file);
 
@@ -849,10 +865,7 @@ function ctaxSection(sectionId) {
 
                 const response = await fetch(endpoint, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    },
+                    headers,
                     body: formData
                 });
 
@@ -878,6 +891,8 @@ function ctaxSection(sectionId) {
         },
 
         async deleteAttachment(attachmentId, item, itemType) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             if (!confirm('Are you sure you want to delete this file?')) {
                 return;
             }
@@ -885,10 +900,7 @@ function ctaxSection(sectionId) {
             try {
                 const response = await fetch(`/api/work-sections/attachments/${attachmentId}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Access-Token': document.getElementById('access_token').value
-                    }
+                    headers
                 });
 
                 const data = await response.json();

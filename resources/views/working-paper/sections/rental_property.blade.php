@@ -405,13 +405,36 @@ function rentalPropertySection(sectionId) {
             await this.loadProperties();
         },
 
+        detectAuth() {
+            const guestInput = document.getElementById('access_token');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+            const headers = {
+                Accept: 'application/json'
+            };
+
+            // ✅ GUEST TOKEN FIRST
+            if (guestInput?.value) {
+                headers['X-ACCESS-TOKEN'] = guestInput.value;
+                return headers;
+            }
+
+            // ✅ AUTHENTICATED USER SECOND
+            if (csrfMeta?.content) {
+                headers['X-CSRF-TOKEN'] = csrfMeta.content;
+                return headers;
+            }
+
+            console.error('No valid auth token found');
+            return headers;
+        },
+
         async loadProperties() {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/rental-properties`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                    headers
                 });
 
                 if (response.ok) {
@@ -448,15 +471,14 @@ function rentalPropertySection(sectionId) {
         },
 
         async addProperty() {
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
             try {
                 // Create property in database first
                 const response = await fetch(`/api/work-sections/${this.sectionId}/rental-properties`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: 'rental',
                         address_label: '',
@@ -496,6 +518,8 @@ function rentalPropertySection(sectionId) {
         },
 
         async removeProperty(index) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             if (!confirm('Remove this property? This will delete all associated income and expenses. This action cannot be undone.')) {
                 return;
             }
@@ -505,10 +529,7 @@ function rentalPropertySection(sectionId) {
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/rental-properties/${property.id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                    headers
                 });
 
                 if (!response.ok) {
@@ -568,15 +589,14 @@ function rentalPropertySection(sectionId) {
 
         async updateProperty(propIndex) {
             const property = this.properties[propIndex];
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
 
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/rental-properties/${property.id}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: property.label || 'rental',
                         address_label: property.address_label,
@@ -601,6 +621,9 @@ function rentalPropertySection(sectionId) {
         async saveIncome(propIndex) {
             const property = this.properties[propIndex];
             const income = property.newIncome;
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
 
             if (!income.description || income.amount <= 0) {
                 alert('Please provide description and amount');
@@ -612,11 +635,7 @@ function rentalPropertySection(sectionId) {
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/income`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: 'rental',
                         description: income.description,
@@ -662,6 +681,9 @@ function rentalPropertySection(sectionId) {
         async saveExpense(propIndex) {
             const property = this.properties[propIndex];
             const expense = property.newExpense;
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
 
             if (!expense.description || expense.amount <= 0) {
                 alert('Please provide description and amount');
@@ -673,11 +695,7 @@ function rentalPropertySection(sectionId) {
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/expenses`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: 'rental',
                         description: expense.description,
@@ -727,6 +745,8 @@ function rentalPropertySection(sectionId) {
         },
 
         async uploadFile(itemId, file, type) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             const formData = new FormData();
             formData.append('file', file);
 
@@ -737,10 +757,7 @@ function rentalPropertySection(sectionId) {
             try {
                 const response = await fetch(endpoint, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: formData
                 });
 
@@ -758,11 +775,10 @@ function rentalPropertySection(sectionId) {
         },
 
         async getIncomeItem(id) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             const response = await fetch(`/api/work-sections/${this.sectionId}/income`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
+                headers
             });
 
             if (response.ok) {
@@ -773,11 +789,10 @@ function rentalPropertySection(sectionId) {
         },
 
         async getExpenseItem(id) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             const response = await fetch(`/api/work-sections/${this.sectionId}/expenses`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
+                headers
             });
 
             if (response.ok) {
@@ -789,14 +804,13 @@ function rentalPropertySection(sectionId) {
 
         async deleteIncome(propIndex, incIndex, incomeId) {
             if (!confirm('Delete this income entry?')) return;
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
 
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/income/${incomeId}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                    headers
                 });
 
                 if (!response.ok) {
@@ -813,14 +827,13 @@ function rentalPropertySection(sectionId) {
 
         async deleteExpense(propIndex, expIndex, expenseId) {
             if (!confirm('Delete this expense entry?')) return;
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
 
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/expenses/${expenseId}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                    headers
                 });
 
                 if (!response.ok) {

@@ -413,8 +413,34 @@ function soleTraderSection(sectionId) {
             await this.loadData();
         },
 
+        detectAuth() {
+            const guestInput = document.getElementById('access_token');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+            const headers = {
+                Accept: 'application/json'
+            };
+
+            // ✅ GUEST TOKEN FIRST
+            if (guestInput?.value) {
+                headers['X-ACCESS-TOKEN'] = guestInput.value;
+                return headers;
+            }
+
+            // ✅ AUTHENTICATED USER SECOND
+            if (csrfMeta?.content) {
+                headers['X-CSRF-TOKEN'] = csrfMeta.content;
+                return headers;
+            }
+
+            console.error('No valid auth token found');
+            return headers;
+        },
+
         // Load data
         async loadData() {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             try {
                 const quarter = this.activeTab === 'all' ? '' : this.activeTab;
 
@@ -422,10 +448,7 @@ function soleTraderSection(sectionId) {
                 const incomeResponse = await fetch(
                     `/api/work-sections/${this.sectionId}/income${quarter ? '?quarter=' + quarter : ''}`,
                     {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        }
+                        headers
                     }
                 );
 
@@ -444,10 +467,7 @@ function soleTraderSection(sectionId) {
                 const expenseResponse = await fetch(
                     `/api/work-sections/${this.sectionId}/expenses${quarter ? '?quarter=' + quarter : ''}`,
                     {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        }
+                        headers
                     }
                 );
 
@@ -544,6 +564,9 @@ function soleTraderSection(sectionId) {
 
         async saveIncome() {
             this.saving = true;
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
 
             try {
                 if (!this.newIncome.description || this.newIncome.description.trim() === '') {
@@ -556,11 +579,7 @@ function soleTraderSection(sectionId) {
 
                 const response = await fetch(`/api/work-sections/${this.sectionId}/income`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: 'soleTrader',
                         description: this.newIncome.description,
@@ -605,13 +624,13 @@ function soleTraderSection(sectionId) {
                 return;
             }
 
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
+
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/income/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                    headers
                 });
 
                 const data = await response.json();
@@ -659,6 +678,9 @@ function soleTraderSection(sectionId) {
 
         async saveExpense() {
             this.saving = true;
+            const headers = this.detectAuth();
+            headers['Content-Type'] = 'application/json';
+            headers['Accept'] = 'application/json';
 
             try {
                 if (!this.newExpense.description || this.newExpense.description.trim() === '') {
@@ -671,11 +693,7 @@ function soleTraderSection(sectionId) {
 
                 const response = await fetch(`/api/work-sections/${this.sectionId}/expenses`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: JSON.stringify({
                         label: 'soleTrader',
                         type: this.newExpense.type,
@@ -726,13 +744,13 @@ function soleTraderSection(sectionId) {
                 return;
             }
 
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
+
             try {
                 const response = await fetch(`/api/work-sections/${this.sectionId}/expenses/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                    headers
                 });
 
                 const data = await response.json();
@@ -767,16 +785,15 @@ function soleTraderSection(sectionId) {
             const file = event.target.files[0];
             if (!file) return;
 
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             const formData = new FormData();
             formData.append('file', file);
 
             try {
                 const response = await fetch(`/api/work-sections/income/${incomeId}/upload`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: formData
                 });
 
@@ -808,16 +825,15 @@ function soleTraderSection(sectionId) {
             const file = event.target.files[0];
             if (!file) return;
 
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             const formData = new FormData();
             formData.append('file', file);
 
             try {
                 const response = await fetch(`/api/work-sections/expenses/${expenseId}/upload`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: formData
                 });
 
@@ -846,6 +862,8 @@ function soleTraderSection(sectionId) {
         },
 
         async uploadFileForNewEntry(entryId, file, entryType) {
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
             const formData = new FormData();
             formData.append('file', file);
 
@@ -856,10 +874,7 @@ function soleTraderSection(sectionId) {
 
                 const response = await fetch(endpoint, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
+                    headers,
                     body: formData
                 });
 
@@ -889,13 +904,13 @@ function soleTraderSection(sectionId) {
                 return;
             }
 
+            const headers = this.detectAuth();
+            headers['Accept'] = 'application/json';
+
             try {
                 const response = await fetch(`/api/work-sections/attachments/${attachmentId}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
+                    headers
                 });
 
                 const data = await response.json();
